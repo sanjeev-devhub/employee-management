@@ -46,7 +46,7 @@ class SalaryServiceImplTest {
                 .empNo(10001)
                 .firstName("John")
                 .lastName("Doe")
-                .sex(Gender.MALE)
+                .sex("M")
                 .birthDate(LocalDate.of(1990, 1, 15))
                 .hireDate(LocalDate.of(2020, 6, 1))
                 .build();
