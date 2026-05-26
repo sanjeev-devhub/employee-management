@@ -1,5 +1,6 @@
 package com.company.employeemanagement.service.impl;
 
+import com.company.employeemanagement.config.RedisCacheConfig;
 import com.company.employeemanagement.dto.request.DepartmentRequest;
 import com.company.employeemanagement.dto.response.DepartmentResponse;
 import com.company.employeemanagement.dto.response.EmployeeResponse;
@@ -14,6 +15,10 @@ import com.company.employeemanagement.repository.EmployeeRepository;
 import com.company.employeemanagement.service.DepartmentService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -32,6 +37,10 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @Caching(
+            put   = { @CachePut(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "#result.deptNo") },
+            evict = { @CacheEvict(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "'ALL'") }
+    )
     public DepartmentResponse createDepartment(DepartmentRequest request) {
         log.info("Creating department: {}", request.getDeptNo());
         if (departmentRepository.existsById(request.getDeptNo())) {
@@ -48,6 +57,10 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @Caching(
+            put   = { @CachePut(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "#deptNo") },
+            evict = { @CacheEvict(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "'ALL'") }
+    )
     public DepartmentResponse updateDepartment(String deptNo, DepartmentRequest request) {
         log.info("Updating department: {}", deptNo);
         Department department = findDepartmentOrThrow(deptNo);
@@ -63,6 +76,10 @@ public class DepartmentServiceImpl implements DepartmentService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "#deptNo"),
+            @CacheEvict(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "'ALL'")
+    })
     public void deleteDepartment(String deptNo) {
         log.info("Deleting department: {}", deptNo);
         Department department = findDepartmentOrThrow(deptNo);
@@ -71,14 +88,19 @@ public class DepartmentServiceImpl implements DepartmentService {
     }
 
     @Override
+    @Cacheable(value = RedisCacheConfig.DEPARTMENT_CACHE, key = "#deptNo")
     public DepartmentResponse getDepartmentById(String deptNo) {
-        log.info("Fetching department: {}", deptNo);
+        log.info("Fetching department from DB: {}", deptNo);
         return departmentMapper.toResponse(findDepartmentOrThrow(deptNo));
     }
 
     @Override
+    @Cacheable(
+            value = RedisCacheConfig.DEPARTMENT_CACHE,
+            key = "'ALL::' + #pageable.pageNumber + '::' + #pageable.pageSize + '::' + #pageable.sort.toString()"
+    )
     public PageResponse<DepartmentResponse> getAllDepartments(Pageable pageable) {
-        log.info("Fetching all departments, page: {}", pageable.getPageNumber());
+        log.info("Fetching all departments from DB, page: {}", pageable.getPageNumber());
         Page<DepartmentResponse> page = departmentRepository.findAll(pageable)
                 .map(departmentMapper::toResponse);
         return PageResponse.of(page);

@@ -62,7 +62,7 @@ class EmployeeServiceImplTest {
                 .title(title)
                 .firstName("John")
                 .lastName("Doe")
-                .sex("MALE")
+                .sex(Gender.MALE)
                 .birthDate(LocalDate.of(1990, 1, 15))
                 .hireDate(LocalDate.of(2020, 6, 1))
                 .build();
@@ -129,28 +129,9 @@ class EmployeeServiceImplTest {
                 .hasMessageContaining("T001");
     }
 
-//    @Test
+    @Test
     @DisplayName("Should get employee by ID successfully")
     void getEmployeeById_Success() {
-        employee = Employee.builder()
-                .empNo(10001)
-                .title(title)
-                .firstName("John")
-                .lastName("Doe")
-                .sex("MALE")
-                .birthDate(LocalDate.of(1990, 1, 15))
-                .hireDate(LocalDate.of(2020, 6, 1))
-                .build();
-        employeeResponse = EmployeeResponse.builder()
-                .empNo(10001)
-                .titleId("T001")
-                .titleName("Software Engineer")
-                .firstName("John")
-                .lastName("Doe")
-                .sex(Gender.MALE)
-                .birthDate(LocalDate.of(1990, 1, 15))
-                .hireDate(LocalDate.of(2020, 6, 1))
-                .build();
         when(employeeRepository.findById(10001)).thenReturn(Optional.of(employee));
         when(employeeMapper.toResponse(employee)).thenReturn(employeeResponse);
 
@@ -170,30 +151,10 @@ class EmployeeServiceImplTest {
                 .hasMessageContaining("99999");
     }
 
-//    @Test
+    @Test
     @DisplayName("Should return paginated employees")
     void getAllEmployees_Success() {
         Pageable pageable = PageRequest.of(0, 10);
-        employee = Employee.builder()
-                .empNo(10001)
-                .title(title)
-                .firstName("John")
-                .lastName("Doe")
-                .sex("MALE")
-                .birthDate(LocalDate.of(1990, 1, 15))
-                .hireDate(LocalDate.of(2020, 6, 1))
-                .build();
-
-        employeeResponse = EmployeeResponse.builder()
-                .empNo(10001)
-                .titleId("T001")
-                .titleName("Software Engineer")
-                .firstName("John")
-                .lastName("Doe")
-                .sex(Gender.MALE)
-                .birthDate(LocalDate.of(1990, 1, 15))
-                .hireDate(LocalDate.of(2020, 6, 1))
-                .build();
         Page<Employee> employeePage = new PageImpl<>(List.of(employee), pageable, 1);
 
         when(employeeRepository.findAll(pageable)).thenReturn(employeePage);
@@ -206,30 +167,11 @@ class EmployeeServiceImplTest {
         assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
-//    @Test
+    @Test
     @DisplayName("Should search employees with specification")
     @SuppressWarnings("unchecked")
     void searchEmployees_Success() {
         Pageable pageable = PageRequest.of(0, 10);
-        employee = Employee.builder()
-                .empNo(10001)
-                .title(title)
-                .firstName("John")
-                .lastName("Doe")
-                .sex("MALE")
-                .birthDate(LocalDate.of(1990, 1, 15))
-                .hireDate(LocalDate.of(2020, 6, 1))
-                .build();
-        employeeResponse = EmployeeResponse.builder()
-                .empNo(10001)
-                .titleId("T001")
-                .titleName("Software Engineer")
-                .firstName("John")
-                .lastName("Doe")
-                .sex(Gender.MALE)
-                .birthDate(LocalDate.of(1990, 1, 15))
-                .hireDate(LocalDate.of(2020, 6, 1))
-                .build();
         Page<Employee> employeePage = new PageImpl<>(List.of(employee), pageable, 1);
 
         when(employeeRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(employeePage);
@@ -260,7 +202,7 @@ class EmployeeServiceImplTest {
         assertThatThrownBy(() -> employeeService.deleteEmployee(99999))
                 .isInstanceOf(ResourceNotFoundException.class);
 
-        verify(employeeRepository, never()).delete((Employee) any());
+        verify(employeeRepository, never()).delete(any());
     }
 
     @Test

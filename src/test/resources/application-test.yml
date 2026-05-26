@@ -14,6 +14,14 @@ spring:
         format_sql: true
         dialect: org.hibernate.dialect.H2Dialect
 
+  # Disable Redis auto-config in tests; fall back to in-memory cache
+  autoconfigure:
+    exclude:
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisRepositoriesAutoConfiguration
+  cache:
+    type: simple
+
   h2:
     console:
       enabled: true

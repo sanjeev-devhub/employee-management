@@ -160,7 +160,7 @@ class DepartmentServiceImplTest {
         Pageable pageable = PageRequest.of(0, 10);
         Employee employee = Employee.builder()
                 .empNo(10001).firstName("John").lastName("Doe")
-                .sex("MALE")
+                .sex(Gender.MALE)
                 .birthDate(LocalDate.of(1990, 1, 1))
                 .hireDate(LocalDate.of(2020, 1, 1))
                 .build();
