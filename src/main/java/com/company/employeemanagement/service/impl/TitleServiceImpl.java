@@ -1,5 +1,6 @@
 package com.company.employeemanagement.service.impl;
 
+import com.company.employeemanagement.config.RedisCacheConfig;
 import com.company.employeemanagement.dto.request.TitleRequest;
 import com.company.employeemanagement.dto.response.PageResponse;
 import com.company.employeemanagement.dto.response.TitleResponse;
@@ -11,6 +12,10 @@ import com.company.employeemanagement.repository.TitleRepository;
 import com.company.employeemanagement.service.TitleService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
@@ -27,6 +32,10 @@ public class TitleServiceImpl implements TitleService {
 
     @Override
     @Transactional
+    @Caching(
+            put   = { @CachePut(value = RedisCacheConfig.TITLE_CACHE, key = "#result.titleId") },
+            evict = { @CacheEvict(value = RedisCacheConfig.TITLE_CACHE, key = "'ALL'") }
+    )
     public TitleResponse createTitle(TitleRequest request) {
         log.info("Creating title with ID: {}", request.getTitleId());
         if (titleRepository.existsById(request.getTitleId())) {
@@ -43,6 +52,10 @@ public class TitleServiceImpl implements TitleService {
 
     @Override
     @Transactional
+    @Caching(
+            put   = { @CachePut(value = RedisCacheConfig.TITLE_CACHE, key = "#titleId") },
+            evict = { @CacheEvict(value = RedisCacheConfig.TITLE_CACHE, key = "'ALL'") }
+    )
     public TitleResponse updateTitle(String titleId, TitleRequest request) {
         log.info("Updating title: {}", titleId);
         Title title = findTitleOrThrow(titleId);
@@ -58,6 +71,10 @@ public class TitleServiceImpl implements TitleService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = RedisCacheConfig.TITLE_CACHE, key = "#titleId"),
+            @CacheEvict(value = RedisCacheConfig.TITLE_CACHE, key = "'ALL'")
+    })
     public void deleteTitle(String titleId) {
         log.info("Deleting title: {}", titleId);
         Title title = findTitleOrThrow(titleId);
@@ -66,14 +83,19 @@ public class TitleServiceImpl implements TitleService {
     }
 
     @Override
+    @Cacheable(value = RedisCacheConfig.TITLE_CACHE, key = "#titleId")
     public TitleResponse getTitleById(String titleId) {
-        log.info("Fetching title: {}", titleId);
+        log.info("Fetching title from DB: {}", titleId);
         return titleMapper.toResponse(findTitleOrThrow(titleId));
     }
 
     @Override
+    @Cacheable(
+            value = RedisCacheConfig.TITLE_CACHE,
+            key = "'ALL::' + #pageable.pageNumber + '::' + #pageable.pageSize + '::' + #pageable.sort.toString()"
+    )
     public PageResponse<TitleResponse> getAllTitles(Pageable pageable) {
-        log.info("Fetching all titles, page: {}", pageable.getPageNumber());
+        log.info("Fetching all titles from DB, page: {}", pageable.getPageNumber());
         Page<TitleResponse> page = titleRepository.findAll(pageable)
                 .map(titleMapper::toResponse);
         return PageResponse.of(page);

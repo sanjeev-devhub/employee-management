@@ -1,5 +1,6 @@
 package com.company.employeemanagement.service.impl;
 
+import com.company.employeemanagement.config.RedisCacheConfig;
 import com.company.employeemanagement.dto.request.EmployeeRequest;
 import com.company.employeemanagement.dto.response.EmployeeResponse;
 import com.company.employeemanagement.dto.response.PageResponse;
@@ -15,6 +16,10 @@ import com.company.employeemanagement.service.EmployeeService;
 import com.company.employeemanagement.specification.EmployeeSpecification;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.CachePut;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -33,6 +38,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
+    @Caching(
+            put   = { @CachePut(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "#result.empNo") },
+            evict = { @CacheEvict(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "'ALL'") }
+    )
     public EmployeeResponse createEmployee(EmployeeRequest request) {
         log.info("Creating employee with ID: {}", request.getEmpNo());
 
@@ -43,7 +52,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         Title title = findTitleOrThrow(request.getTitleId());
         Employee employee = employeeMapper.toEntity(request);
         employee.setTitle(title);
-        employee.setSex(toDbSex(request.getSex()));   // MALE → "M", FEMALE → "F"
+        employee.setSex(toDbSex(request.getSex()));
 
         Employee saved = employeeRepository.save(employee);
         log.info("Employee created: {}", saved.getEmpNo());
@@ -52,6 +61,10 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
+    @Caching(
+            put   = { @CachePut(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "#empNo") },
+            evict = { @CacheEvict(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "'ALL'") }
+    )
     public EmployeeResponse updateEmployee(Integer empNo, EmployeeRequest request) {
         log.info("Updating employee: {}", empNo);
 
@@ -63,7 +76,7 @@ public class EmployeeServiceImpl implements EmployeeService {
         }
 
         employeeMapper.updateEntity(request, employee);
-        employee.setSex(toDbSex(request.getSex()));   // keep sex in sync
+        employee.setSex(toDbSex(request.getSex()));
 
         Employee updated = employeeRepository.save(employee);
         log.info("Employee updated: {}", empNo);
@@ -72,6 +85,11 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "#empNo"),
+            @CacheEvict(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "'ALL'"),
+            @CacheEvict(value = RedisCacheConfig.SALARY_CACHE,   key = "#empNo")
+    })
     public void deleteEmployee(Integer empNo) {
         log.info("Deleting employee: {}", empNo);
         Employee employee = findEmployeeOrThrow(empNo);
@@ -80,14 +98,19 @@ public class EmployeeServiceImpl implements EmployeeService {
     }
 
     @Override
+    @Cacheable(value = RedisCacheConfig.EMPLOYEE_CACHE, key = "#empNo")
     public EmployeeResponse getEmployeeById(Integer empNo) {
-        log.info("Fetching employee: {}", empNo);
+        log.info("Fetching employee from DB: {}", empNo);
         return toResponse(findEmployeeOrThrow(empNo));
     }
 
     @Override
+    @Cacheable(
+            value = RedisCacheConfig.EMPLOYEE_CACHE,
+            key = "'ALL::' + #pageable.pageNumber + '::' + #pageable.pageSize + '::' + #pageable.sort.toString()"
+    )
     public PageResponse<EmployeeResponse> getAllEmployees(Pageable pageable) {
-        log.info("Fetching all employees, page: {}", pageable.getPageNumber());
+        log.info("Fetching all employees from DB, page: {}", pageable.getPageNumber());
         Page<EmployeeResponse> page = employeeRepository.findAll(pageable)
                 .map(this::toResponse);
         return PageResponse.of(page);
@@ -98,6 +121,7 @@ public class EmployeeServiceImpl implements EmployeeService {
             String firstName, String lastName, String department, String title, Pageable pageable) {
         log.info("Searching employees - firstName: {}, lastName: {}, dept: {}, title: {}",
                 firstName, lastName, department, title);
+        // Search not cached: too many parameter combinations, low cache hit rate
         Specification<Employee> spec = EmployeeSpecification.filterBy(firstName, lastName, department, title);
         Page<EmployeeResponse> page = employeeRepository.findAll(spec, pageable)
                 .map(this::toResponse);
@@ -106,28 +130,16 @@ public class EmployeeServiceImpl implements EmployeeService {
 
     // ── Helpers ──────────────────────────────────────────────────────────────
 
-    /**
-     * Converts Gender enum from the request (MALE/FEMALE)
-     * to the single-char value stored in the DB ('M'/'F').
-     */
     private String toDbSex(Gender gender) {
         if (gender == null) return null;
-        return gender.getCode();   // Gender.MALE.getCode() == "M"
+        return gender.getCode();
     }
 
-    /**
-     * Converts the single-char DB value ('M'/'F') back to the
-     * Gender enum for the API response.
-     */
     private Gender fromDbSex(String dbValue) {
         if (dbValue == null) return null;
         return Gender.fromCode(dbValue);
     }
 
-    /**
-     * Builds EmployeeResponse, manually handling the sex conversion
-     * so the mapper never needs to know about the DB format.
-     */
     private EmployeeResponse toResponse(Employee employee) {
         EmployeeResponse response = employeeMapper.toResponse(employee);
         response.setSex(fromDbSex(employee.getSex()));

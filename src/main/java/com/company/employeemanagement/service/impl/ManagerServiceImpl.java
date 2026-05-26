@@ -1,5 +1,6 @@
 package com.company.employeemanagement.service.impl;
 
+import com.company.employeemanagement.config.RedisCacheConfig;
 import com.company.employeemanagement.dto.request.ManagerAssignRequest;
 import com.company.employeemanagement.dto.response.ManagerResponse;
 import com.company.employeemanagement.entity.Department;
@@ -10,6 +11,9 @@ import com.company.employeemanagement.repository.EmployeeRepository;
 import com.company.employeemanagement.service.ManagerService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
+import org.springframework.cache.annotation.Caching;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +31,10 @@ public class ManagerServiceImpl implements ManagerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = RedisCacheConfig.MANAGER_CACHE, key = "'ALL'"),
+            @CacheEvict(value = RedisCacheConfig.MANAGER_CACHE, key = "#request.deptNo")
+    })
     public ManagerResponse assignManager(ManagerAssignRequest request) {
         log.info("Assigning manager {} to department {}", request.getEmpNo(), request.getDeptNo());
         Department department = findDepartmentOrThrow(request.getDeptNo());
@@ -39,6 +47,10 @@ public class ManagerServiceImpl implements ManagerService {
 
     @Override
     @Transactional
+    @Caching(evict = {
+            @CacheEvict(value = RedisCacheConfig.MANAGER_CACHE, key = "'ALL'"),
+            @CacheEvict(value = RedisCacheConfig.MANAGER_CACHE, key = "#request.deptNo")
+    })
     public void removeManager(ManagerAssignRequest request) {
         log.info("Removing manager {} from department {}", request.getEmpNo(), request.getDeptNo());
         Department department = findDepartmentOrThrow(request.getDeptNo());
@@ -54,8 +66,9 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
+    @Cacheable(value = RedisCacheConfig.MANAGER_CACHE, key = "'ALL'")
     public List<ManagerResponse> getAllManagers() {
-        log.info("Fetching all managers");
+        log.info("Fetching all managers from DB");
         List<ManagerResponse> responses = new ArrayList<>();
         List<Department> departments = departmentRepository.findAll();
         for (Department dept : departments) {
@@ -67,8 +80,9 @@ public class ManagerServiceImpl implements ManagerService {
     }
 
     @Override
+    @Cacheable(value = RedisCacheConfig.MANAGER_CACHE, key = "#deptNo")
     public List<ManagerResponse> getManagersByDepartment(String deptNo) {
-        log.info("Fetching managers for department: {}", deptNo);
+        log.info("Fetching managers from DB for department: {}", deptNo);
         Department department = findDepartmentOrThrow(deptNo);
         List<ManagerResponse> responses = new ArrayList<>();
         for (Employee manager : department.getManagers()) {

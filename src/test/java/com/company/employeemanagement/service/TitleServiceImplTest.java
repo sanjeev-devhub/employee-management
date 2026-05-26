@@ -143,6 +143,7 @@ class TitleServiceImplTest {
     @DisplayName("Should update title successfully")
     void updateTitle_Success() {
         when(titleRepository.findById("T001")).thenReturn(Optional.of(title));
+        when(titleRepository.existsByTitle("Software Engineer")).thenReturn(false);
         when(titleRepository.save(title)).thenReturn(title);
         when(titleMapper.toResponse(title)).thenReturn(titleResponse);
 

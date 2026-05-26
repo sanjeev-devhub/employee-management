@@ -8,9 +8,9 @@ spring:
     name: employee-management
 
   datasource:
-    url: jdbc:postgresql://localhost:5432/employee
+    url: jdbc:postgresql://localhost:5433/postgres
     username: postgres
-    password: postgres
+    password: 9533
     driver-class-name: org.postgresql.Driver
     hikari:
       maximum-pool-size: 10
@@ -22,7 +22,7 @@ spring:
   jpa:
     hibernate:
       ddl-auto: update
-    show-sql: false
+    show-sql: true
     properties:
       hibernate:
         format_sql: true
@@ -31,6 +31,28 @@ spring:
           lob:
             non_contextual_creation: true
     open-in-view: false
+
+  # Redis connection
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      timeout: 5000ms
+      lettuce:
+        pool:
+          max-active: 16
+          max-idle: 8
+          min-idle: 2
+          max-wait: 2000ms
+
+  # Spring Cache abstraction — backed by Redis
+  cache:
+    type: redis
+    redis:
+      time-to-live: 600000        # default TTL: 10 minutes
+      cache-null-values: false
+      use-key-prefix: true
+      key-prefix: "emp-mgmt::"
 
 springdoc:
   api-docs:
