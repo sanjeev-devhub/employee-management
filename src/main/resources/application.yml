@@ -23,33 +23,42 @@ spring:
     hibernate:
       ddl-auto: update
     show-sql: true
+
     properties:
       hibernate:
         format_sql: true
         dialect: org.hibernate.dialect.PostgreSQLDialect
+
         jdbc:
           lob:
             non_contextual_creation: true
+
     open-in-view: false
 
-  # Redis connection
+  # =========================
+  # Valkey / Redis Connection
+  # =========================
   data:
     redis:
       host: localhost
       port: 6379
-      timeout: 5000ms
+      timeout: 5s
+
       lettuce:
         pool:
           max-active: 16
           max-idle: 8
           min-idle: 2
-          max-wait: 2000ms
+          max-wait: 2s
 
-  # Spring Cache abstraction — backed by Redis
+  # =========================
+  # Spring Cache Configuration
+  # =========================
   cache:
     type: redis
+
     redis:
-      time-to-live: 600000        # default TTL: 10 minutes
+      time-to-live: 10m
       cache-null-values: false
       use-key-prefix: true
       key-prefix: "emp-mgmt::"
@@ -68,5 +77,10 @@ logging:
     com.company.employeemanagement: DEBUG
     org.hibernate.SQL: DEBUG
     org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
+    # Redis / Valkey debug logs
+    org.springframework.data.redis: DEBUG
+    io.lettuce.core: INFO
+
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"

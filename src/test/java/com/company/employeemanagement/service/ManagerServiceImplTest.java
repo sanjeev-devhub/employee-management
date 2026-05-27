@@ -47,7 +47,6 @@ class ManagerServiceImplTest {
                 .empNo(10001)
                 .firstName("John")
                 .lastName("Doe")
-                .sex(Gender.MALE)
                 .birthDate(LocalDate.of(1985, 5, 10))
                 .hireDate(LocalDate.of(2010, 3, 1))
                 .build();

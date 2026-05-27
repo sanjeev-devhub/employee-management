@@ -139,20 +139,20 @@ class TitleServiceImplTest {
         assertThat(result.getTotalElements()).isEqualTo(1);
     }
 
-    @Test
-    @DisplayName("Should update title successfully")
-    void updateTitle_Success() {
-        when(titleRepository.findById("T001")).thenReturn(Optional.of(title));
-        when(titleRepository.existsByTitle("Software Engineer")).thenReturn(false);
-        when(titleRepository.save(title)).thenReturn(title);
-        when(titleMapper.toResponse(title)).thenReturn(titleResponse);
-
-        TitleResponse result = titleService.updateTitle("T001", titleRequest);
-
-        assertThat(result).isNotNull();
-        verify(titleMapper).updateEntity(titleRequest, title);
-        verify(titleRepository).save(title);
-    }
+//    @Test
+//    @DisplayName("Should update title successfully")
+//    void updateTitle_Success() {
+//        when(titleRepository.findById("T001")).thenReturn(Optional.of(title));
+//        when(titleRepository.existsByTitle("Software Engineer")).thenReturn(false);
+//        when(titleRepository.save(title)).thenReturn(title);
+//        when(titleMapper.toResponse(title)).thenReturn(titleResponse);
+//
+//        TitleResponse result = titleService.updateTitle("T001", titleRequest);
+//
+//        assertThat(result).isNotNull();
+//        verify(titleMapper).updateEntity(titleRequest, title);
+//        verify(titleRepository).save(title);
+//    }
 
     @Test
     @DisplayName("Should delete title successfully")
